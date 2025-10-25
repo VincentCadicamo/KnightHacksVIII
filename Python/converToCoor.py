@@ -9,9 +9,9 @@ indices = [int(m.group(1)) for m in re.finditer(r"(\d+)\s*\(Dist:", log_line)]
 # Load a single array
 points = np.load("data/points_lat_long.npy")
 
-coords = [(points[i][0], points[i][1]) for i in indices]
+coords = [(idx, points[idx][0], points[idx][1]) for idx in indices]
 
-for lon, lat in coords:
+for idx, lon, lat in coords:
     print(f"Lon= {lon:f}, Lat= {lat:f}")
 
 
