@@ -27,4 +27,17 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.1</version>
+                <configuration>
+                    <mainClass>org.example.TspCities</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
