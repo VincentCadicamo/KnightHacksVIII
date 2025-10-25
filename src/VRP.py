@@ -1,9 +1,30 @@
-import os, numpy as np
+import json, os, numpy as np
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
+def extract_vehicle_routes(data, manager, routing, solution):
+    routes = []
+    for v in range(data["num_vehicles"]):
+        start_idx = routing.Start(v)
+        if routing.IsEnd(solution.Value(routing.NextVar(start_idx))):
+            continue
+        route = [manager.IndexToNode(start_idx)]
+        idx = start_idx
+        while not routing.IsEnd(idx):
+            idx = solution.Value(routing.NextVar(idx))
+            route.append(manager.IndexToNode(idx))
+        routes.append(route)
+    return routes
+
+def combine_routes_with_single_depot_separator(routes, depot=0):
+    combined = []
+    for i, r in enumerate(routes):
+        if i < len(routes) - 1:
+            combined.extend(r[:-1])
+        else:
+            combined.extend(r)
+    return combined
 def create_data_model():
-    """Stores the data for the problem."""
     data = {}
 
     npy_file_path = os.path.join("data", "distance_matrix.npy")
@@ -16,7 +37,11 @@ def create_data_model():
 
     data["distance_matrix"] = matrix.astype(int)
     print("[Loaded distance matrix]")
-    data["num_vehicles"] = len(data["distance_matrix"])
+
+    n = len(data["distance_matrix"])
+    num_customers = n - 1
+
+    data["num_vehicles"] = num_customers
     data["depot"] = 0
     return data
 
@@ -44,7 +69,6 @@ def print_solution(data, manager, routing, solution):
     print(f"Maximum of the route distances: {max_route_distance}m")
 
 
-
 def main():
     data = create_data_model()
 
@@ -53,20 +77,14 @@ def main():
         len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
     )
 
-    # Create Routing Model.
     routing = pywrapcp.RoutingModel(manager)
 
-    # Create and register a transit callback.
     def distance_callback(from_index, to_index):
-        """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data["distance_matrix"][from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
-
-    # Define cost of each arc.
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
     # Add Distance constraint.
@@ -94,6 +112,14 @@ def main():
     # Print solution on console.
     if solution:
         print_solution(data, manager, routing, solution)
+
+        routes = extract_vehicle_routes(data, manager, routing, solution)
+        combined = combine_routes_with_single_depot_separator(routes, depot=data["depot"])
+
+        os.makedirs("output", exist_ok=True)
+        out_path = os.path.join("output", "combined_route.json")
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(combined, f)
     else:
         print("No solution found !")
 
