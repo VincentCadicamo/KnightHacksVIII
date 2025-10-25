@@ -35,14 +35,31 @@ def create_data_model():
         print(f"ERROR: Data file not found at {npy_file_path}")
         return None
 
-    data["distance_matrix"] = matrix.astype(int)
+    D = matrix.astype(int)
+    data["distance_matrix"] = D
     print("[Loaded distance matrix]")
 
-    n = len(data["distance_matrix"])
+    n = len(D)
     num_customers = n - 1
 
-    data["num_vehicles"] = num_customers
-    data["depot"] = 0
+    data["distance_cap_ft"] = 37725
+
+
+    depot = 0
+    infeasible_nodes = []
+    for i in range(1, n):
+        rt = int(D[depot][i]) + int(D[i][depot])
+        if rt > data["distance_cap_ft"]:
+            infeasible_nodes.append((i, rt))
+    if infeasible_nodes:
+        print("[Infeasible] These nodes cannot be served within the per-sortie cap:")
+        for i, rt in infeasible_nodes:
+            print(f"  node {i}: depot->i->depot = {rt} > cap {data['distance_cap_ft']}")
+        return None  # or handle by allowing drops (see below)
+
+    data["num_vehicles"] = max(1, min(num_customers, 8))
+
+    data["depot"] = depot
     return data
 
 
@@ -87,23 +104,24 @@ def main():
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
-    # Add Distance constraint.
     dimension_name = "Distance"
     routing.AddDimension(
         transit_callback_index,
-        0,  # no slack
-        37725,  # drone max distance
-        True,  # start cumul to zero
+        0,
+        int(data["distance_cap_ft"]),
+        True,
         dimension_name,
     )
     distance_dimension = routing.GetDimensionOrDie(dimension_name)
     distance_dimension.SetGlobalSpanCostCoefficient(100)
 
-    # Setting first solution heuristic.
+    routing.SetFixedCostOfAllVehicles(500)
+
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )
+    search_parameters.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    search_parameters.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    search_parameters.time_limit.seconds = 15  # <-- hard stop
+    search_parameters.log_search = True
 
     # Solve the problem.
     print("[Solving Solution]")
