@@ -8,12 +8,13 @@ import sys, json, numpy as np
 from createIndicesDF import photo_df, asset_df, waypoint_df, master_df
 from converToCoor import coords
 
-
+# establish file paths
 project_root = Path(__file__).resolve().parent.parent
 wkt_file_path = project_root / 'data' / 'polygon_lon_lat.wkt'
 points_file_path = project_root / 'data' / 'points_lat_long.npy'
 photo_indexes_file_path = project_root / 'data' / 'photo_indexes.npy'
 
+# catch file not found error
 try:
     with open(wkt_file_path) as f:
         polygon_wkt_string = f.read()
@@ -21,24 +22,22 @@ except FileNotFoundError:
     print(f"ERROR: Data file not found at {wkt_file_path}")
 
 allowed_flight_zone = wkt.loads(polygon_wkt_string)
-# TO-DO: import points after path generation from optimized algorithm
-# TO-DO: check if points are .contains within flight zone
-# put zone coordinates into geodataframe and set correct coordinate system
+
+# convert flight zone information into geodataframe with correct coordinate system
 zone_gdf = gpd.GeoDataFrame(geometry=[allowed_flight_zone], crs="EPSG:4326")
-# example long-lat coordinates, change to imported coordinates
-# 2. Swap columns: [:, [1, 0]] means select all rows (:) 
-#    and columns in the order: index 1 (Lon), then index 0 (Lat)
+
+# create list of mission point coordinates from master_df longitude and latitude values
 mission_points_coords = master_df[['lon', 'lat']].values.tolist()
 
-# Create a LineString for the path
+# Create a line connecting each point along the path in order
 mission_path = LineString(mission_points_coords)
 
+# check if path is within allowed bounds
 if(allowed_flight_zone.contains(mission_path)): 
     print("mission path in bounds")
 
-# Create a GeoDataFrame for the path
+# convert path information into geodataframe with correct coordinate system
 path_gdf = gpd.GeoDataFrame(geometry=[mission_path], crs="EPSG:4326")
-# TO-DO: display points on network map with polygon as overlay on a map of the specified area
 
 # 1. Define the Projected CRS (UTM Zone 17N)
 UTM_CRS = "EPSG:32617" 
@@ -59,19 +58,18 @@ center_lon_lat = center_projected.to_crs("EPSG:4326")
 center_lat = center_lon_lat.y.mean()
 center_lon = center_lon_lat.x.mean()
 
-# Use the GeoDataFrame directly with Plotly Express
-# The 'geojson' parameter tells Plotly how to draw the shape.
+# display points on a map of the specified area with allowed flight zone as overlay 
 fig = px.choropleth_mapbox(
     zone_gdf, 
     geojson=zone_gdf.geometry.__geo_interface__,
     locations=zone_gdf.index,
     # Set the color/opacity for the polygon fill
     color_discrete_sequence=['green'],
-    opacity=1, # show allowed area
+    opacity=1,
     
     # Map configuration
     center={"lat": center_lat, "lon": center_lon},
-    mapbox_style="open-street-map", # Use a free, high-quality map tile style
+    mapbox_style="open-street-map",
     zoom=14, # adjust zoom
     title="Allowed Drone Flight Zone and Mission Path"
 )
@@ -94,6 +92,8 @@ fig.add_scattermapbox(
     name='Mission Path'
 )
 
+# Add markers for Photo Locations
+
 fig.add_scattermapbox(
     lat=photo_df['lat'],
     lon=photo_df['lon'],
@@ -105,6 +105,7 @@ fig.add_scattermapbox(
     }, # Style the points
     name='Photo'
 )
+# Add markers for Assets
 
 fig.add_scattermapbox(
     lat=asset_df['lat'],
@@ -117,6 +118,9 @@ fig.add_scattermapbox(
     }, # Style the points
     name='Asset'
 )
+
+# Add markers for Waypoints
+
 fig.add_scattermapbox(
     lat=waypoint_df['lat'],
     lon=waypoint_df['lon'],
