@@ -5,11 +5,13 @@ import geopandas as gpd
 import plotly.express as px
 import pandas as pd
 import sys, json, numpy as np
+from createIndicesDF import photo_df, asset_df, waypoint_df
 
 
 project_root = Path(__file__).resolve().parent.parent
 wkt_file_path = project_root / 'data' / 'polygon_lon_lat.wkt'
-file = project_root / 'data' / 'points_lat_long.npy'
+points_file_path = project_root / 'data' / 'points_lat_long.npy'
+photo_indexes_file_path = project_root / 'data' / 'photo_indexes.npy'
 
 try:
     with open(wkt_file_path) as f:
@@ -25,7 +27,7 @@ zone_gdf = gpd.GeoDataFrame(geometry=[allowed_flight_zone], crs="EPSG:4326")
 # example long-lat coordinates, change to imported coordinates
 # 2. Swap columns: [:, [1, 0]] means select all rows (:) 
 #    and columns in the order: index 1 (Lon), then index 0 (Lat)
-mission_points_coords = np.load(file).tolist()
+mission_points_coords = np.load(points_file_path).tolist()
 
 # Create a LineString for the path
 mission_path = LineString(mission_points_coords)
@@ -78,6 +80,9 @@ fig = px.choropleth_mapbox(
     title="Allowed Drone Flight Zone and Mission Path"
 )
 
+#Add label of boundaries to legend
+fig.update_traces(name='Allowed Flight Zone', selector=dict(type='choroplethmapbox'))
+
 # Set the map tiles to cover the entire area without cutting off
 fig.update_geos(fitbounds="locations", visible=False)
 
@@ -93,21 +98,39 @@ fig.add_scattermapbox(
     name='Mission Path'
 )
 
-# Create a DataFrame for the points to easily plot them with labels
-points_df = pd.DataFrame({
-    'lat': lat_coords,
-    'lon': lon_coords,
-    'label': ['Depot (Start)'] + [f'Waypoint {i}' for i in range(1, len(lon_coords) - 1)] + ['Depot (End)']
-})
+fig.add_scattermapbox(
+    lat=photo_df['lat'],
+    lon=photo_df['lon'],
+    mode='markers',
+    marker={
+        'size': 8,
+        'color': 'pink',
+        'symbol': 'circle'
+    }, # Style the points
+    name='Photo'
+)
 
 fig.add_scattermapbox(
-    lat=points_df['lat'],
-    lon=points_df['lon'],
-    mode='markers+text',
-    marker=dict(size=10, color='blue'), # Style the points
-    text=points_df['label'],
-    textposition='top right',
-    name='Waypoints'
+    lat=asset_df['lat'],
+    lon=asset_df['lon'],
+    mode='markers',
+    marker={
+        'size': 8,
+        'color': 'blue',
+        'symbol': 'circle'
+    }, # Style the points
+    name='Asset'
+)
+fig.add_scattermapbox(
+    lat=waypoint_df['lat'],
+    lon=waypoint_df['lon'],
+    mode='markers',
+    marker={
+        'size': 8,
+        'color': 'yellow',
+        'symbol': 'circle'
+    }, # Style the points
+    name='Waypoint'
 )
 
 # Show the interactive figure
