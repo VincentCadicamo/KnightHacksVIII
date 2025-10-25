@@ -2,6 +2,7 @@ import numpy as np
 from pathlib import Path
 import sys, json
 import pandas as pd
+from converToCoor import coords
 
 project_root = Path(__file__).resolve().parent.parent
 points_file_path = project_root / 'data' / 'points_lat_long.npy'
@@ -11,7 +12,7 @@ waypoints_indexes_file_path = project_root / 'data' / 'waypoint_indexes.npy'
 
 coords_array = np.load(points_file_path)
 N = coords_array.shape[0]
-master_df = pd.DataFrame(coords_array, columns=['lon', 'lat'])
+master_df = pd.DataFrame(coords, columns=['lon', 'lat'])
 
 master_df['index'] = master_df.index
 photo_index_slice = np.load(photo_indexes_file_path)
