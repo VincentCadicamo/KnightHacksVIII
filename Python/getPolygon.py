@@ -6,7 +6,6 @@ import plotly.express as px
 import pandas as pd
 import sys, json, numpy as np
 from createIndicesDF import photo_df, asset_df, waypoint_df, master_df
-from converToCoor import coords
 
 # establish file paths
 project_root = Path(__file__).resolve().parent.parent
