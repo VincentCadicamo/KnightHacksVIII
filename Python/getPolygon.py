@@ -6,6 +6,7 @@ import plotly.express as px
 import pandas as pd
 import sys, json, numpy as np
 from createIndicesDF import photo_df, asset_df, waypoint_df
+from converToCoor import coords
 
 
 project_root = Path(__file__).resolve().parent.parent
@@ -27,7 +28,7 @@ zone_gdf = gpd.GeoDataFrame(geometry=[allowed_flight_zone], crs="EPSG:4326")
 # example long-lat coordinates, change to imported coordinates
 # 2. Swap columns: [:, [1, 0]] means select all rows (:) 
 #    and columns in the order: index 1 (Lon), then index 0 (Lat)
-mission_points_coords = np.load(points_file_path).tolist()
+mission_points_coords = coords
 
 # Create a LineString for the path
 mission_path = LineString(mission_points_coords)
