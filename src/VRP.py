@@ -1,13 +1,21 @@
-import numpy as np
+import os, numpy as np
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-
-
 
 def create_data_model():
     """Stores the data for the problem."""
     data = {}
-    data["distance_matrix"] = np.load("data/distance_matrix.npy")
+
+    npy_file_path = os.path.join("data", "distance_matrix.npy")
+
+    try:
+        matrix = np.load(npy_file_path)
+    except FileNotFoundError:
+        print(f"ERROR: Data file not found at {npy_file_path}")
+        return None
+
+    data["distance_matrix"] = matrix.astype(int)
+    print("[Loaded distance matrix]")
     data["num_vehicles"] = 1
     data["depot"] = 0
     return data
@@ -66,7 +74,7 @@ def main():
     routing.AddDimension(
         transit_callback_index,
         0,  # no slack
-        3000,  # vehicle maximum travel distance
+        37725,  # drone max distance
         True,  # start cumul to zero
         dimension_name,
     )
@@ -80,6 +88,7 @@ def main():
     )
 
     # Solve the problem.
+    print("[Solving Solution]")
     solution = routing.SolveWithParameters(search_parameters)
 
     # Print solution on console.
