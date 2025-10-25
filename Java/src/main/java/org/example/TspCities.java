@@ -1,4 +1,4 @@
-package com.google.ortools.constraintsolver.samples;
+package org.example;
 
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
