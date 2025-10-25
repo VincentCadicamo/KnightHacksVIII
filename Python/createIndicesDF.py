@@ -4,23 +4,24 @@ import sys, json
 import pandas as pd
 from converToCoor import coords
 
+# set up file paths
 project_root = Path(__file__).resolve().parent.parent
 points_file_path = project_root / 'data' / 'points_lat_long.npy'
 photo_indexes_file_path = project_root / 'data' / 'photo_indexes.npy'
 asset_indexes_file_path = project_root/ 'data' / 'asset_indexes.npy'
 waypoints_indexes_file_path = project_root / 'data' / 'waypoint_indexes.npy'
 
+# load file for points
 coords_array = np.load(points_file_path)
+# get max index value for coordinate pairs
 N = coords_array.shape[0]
+# set up master_df to store coordinate info
 master_df = pd.DataFrame(coords, columns=['index','lon', 'lat'])
 
+# load file for slices
 photo_index_slice = np.load(photo_indexes_file_path)
 asset_index_slice = np.load(asset_indexes_file_path)
 waypoints_index_slice = np.load(waypoints_indexes_file_path)
-
-# Extract the values
-first_photo_index = photo_index_slice[0]
-last_photo_index = photo_index_slice[1]
 
 # Generate the complete list of required indices (inclusive of the last index)
 all_photo_indices = np.arange(photo_index_slice[0], photo_index_slice[1] + 1)
