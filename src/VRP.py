@@ -16,7 +16,7 @@ def create_data_model():
 
     data["distance_matrix"] = matrix.astype(int)
     print("[Loaded distance matrix]")
-    data["num_vehicles"] = 1
+    data["num_vehicles"] = len(data["distance_matrix"])
     data["depot"] = 0
     return data
 
