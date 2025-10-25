@@ -12,9 +12,8 @@ waypoints_indexes_file_path = project_root / 'data' / 'waypoint_indexes.npy'
 
 coords_array = np.load(points_file_path)
 N = coords_array.shape[0]
-master_df = pd.DataFrame(coords, columns=['lon', 'lat'])
+master_df = pd.DataFrame(coords, columns=['index','lon', 'lat'])
 
-master_df['index'] = master_df.index
 photo_index_slice = np.load(photo_indexes_file_path)
 asset_index_slice = np.load(asset_indexes_file_path)
 waypoints_index_slice = np.load(waypoints_indexes_file_path)

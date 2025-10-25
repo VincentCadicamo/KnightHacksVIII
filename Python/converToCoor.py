@@ -1,7 +1,7 @@
 import numpy as np, re
 
 # Example arrow text
-log_line = "0 (Dist:0) -> 1820 (Dist:111) -> 1867 (Dist:114) -> 1822 (Dist:153) -> 1872 (Dist:156)"
+log_line = "0 (Dist:0) -> 4000 (Dist:111) -> 1867 (Dist:114) -> 1822 (Dist:153) -> 1872 (Dist:156)"
 
 # Extract only the integers before "(Dist:...)" 
 indices = [int(m.group(1)) for m in re.finditer(r"(\d+)\s*\(Dist:", log_line)]
