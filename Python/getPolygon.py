@@ -32,11 +32,6 @@ mission_points_coords = np.load(points_file_path).tolist()
 # Create a LineString for the path
 mission_path = LineString(mission_points_coords)
 
-for coordinate in mission_points_coords:
-    currentCoordinate = Point(coordinate)
-    if(allowed_flight_zone).contains(currentCoordinate):
-        print("coordinate in bounds")
-
 if(allowed_flight_zone.contains(mission_path)): 
     print("mission path in bounds")
 
