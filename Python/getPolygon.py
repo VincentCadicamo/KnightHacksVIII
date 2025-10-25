@@ -28,7 +28,7 @@ zone_gdf = gpd.GeoDataFrame(geometry=[allowed_flight_zone], crs="EPSG:4326")
 # example long-lat coordinates, change to imported coordinates
 # 2. Swap columns: [:, [1, 0]] means select all rows (:) 
 #    and columns in the order: index 1 (Lon), then index 0 (Lat)
-mission_points_coords = coords
+mission_points_coords = coords.tolist()
 
 # Create a LineString for the path
 mission_path = LineString(mission_points_coords)
