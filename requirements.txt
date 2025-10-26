@@ -3,3 +3,4 @@ ortools
 shapely
 geopandas
 plotly
+folium
