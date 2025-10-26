@@ -1,10 +1,3 @@
-"""
-Solves the Vehicle Routing Problem (VRP) for the drone fleet.
-
-This script finds the optimal *sequence* of nodes for the drones to visit.
-It saves the resulting plan to 'data/route_plan.json' for post-processing.
-"""
-
 import os
 import json
 import time
@@ -13,14 +6,9 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import multiprocessing
 
-# --- THIS IS THE CHANGE ---
-# Get the directory of the current script (src)
 script_dir = os.path.dirname(os.path.abspath(__file__))
-# Get the base directory (one level up)
 base_dir = os.path.dirname(script_dir)
-# Define the data directory path
 data_dir = os.path.join(base_dir, "data")
-# Ensure data directory exists so output can always be written
 os.makedirs(data_dir, exist_ok=True)
 def create_data_model():
     print("Stage 1: Loading data model...")
@@ -69,9 +57,7 @@ def save_solution_to_file(data, manager, routing, solution, solve_time):
         trip["total_distance"] = route_distance
         plan["trips"].append(trip)
 
-    # --- THIS IS THE CHANGE ---
     output_path = os.path.join(data_dir, "route_plan.json")
-    # --- END OF CHANGE ---
     
     try:
         with open(output_path, 'w') as f:
@@ -89,8 +75,6 @@ def save_solution_to_file(data, manager, routing, solution, solve_time):
 
 
 def main():
-    """Entry point of the program."""
-    
     data = create_data_model()
     if data is None:
         return
@@ -136,9 +120,6 @@ def main():
         print(f"Solver found a solution in {solve_time:.2f} seconds!")
         save_solution_to_file(data, manager, routing, solution, solve_time)
     else:
-        # No solution was found; write a fallback file so the user can inspect that
-        # the run completed but produced no plan. This makes it easier to locate
-        # the expected output and diagnose solver timeouts.
         print("No solution found (or solver timed out)!")
         fallback_path = os.path.join(data_dir, "route_plan.json")
         try:
@@ -148,7 +129,5 @@ def main():
         except Exception as e:
             print(f"ERROR: Could not write fallback plan file: {e}")
 
-
 if __name__ == "__main__":
     main()
-

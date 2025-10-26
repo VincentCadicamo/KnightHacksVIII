@@ -4,7 +4,6 @@ import sys, json
 import pandas as pd
 from converToCoor import all_trips
 
-# set up file paths
 project_root = Path(__file__).resolve().parent.parent
 points_file_path = project_root / 'data' / 'points_lat_long.npy'
 photo_indexes_file_path = project_root / 'data' / 'photo_indexes.npy'

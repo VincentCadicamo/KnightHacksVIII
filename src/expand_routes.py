@@ -1,34 +1,20 @@
-"""
-Expands the simple route plan into a full, flyable GPS path.
-
-This script loads the 'route_plan.json' (from the solver) and
-uses 'predecessors.npy' and 'points_lat_long.npy' to generate
-the final, high-resolution flight paths.
-"""
 
 import os
 import json
 import numpy as np
 
-# --- THIS IS THE CHANGE ---
-# Get the directory of the current script (src)
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
-# Get the base directory (one level up)
 base_dir = os.path.dirname(script_dir)
-# Define the data directory path
 data_dir = os.path.join(base_dir, "data")
-# --- END OF CHANGE ---
 
 
 def load_files():
-    """Loads all necessary files from the data directory."""
     print("Loading route plan and .npy files...")
-    
-    # --- THIS IS THE CHANGE ---
+
     plan_path = os.path.join(data_dir, "route_plan.json")
     preds_path = os.path.join(data_dir, "predecessors.npy")
     points_path = os.path.join(data_dir, "points_lat_long.npy")
-    # --- END OF CHANGE ---
     
     try:
         with open(plan_path, 'r') as f:
@@ -47,10 +33,6 @@ def load_files():
 
 
 def expand_full_path(predecessors, from_node, to_node):
-    """
-    Finds the full sequence of nodes between two points
-    using the predecessors matrix.
-    """
     from_node = int(from_node)
     to_node = int(to_node)
     
@@ -68,10 +50,6 @@ def expand_full_path(predecessors, from_node, to_node):
 
 
 def save_final_routes(plan, predecessors, points_lat_long):
-    """
-    Loops through the simple plan, expands all paths,
-    and saves the final flyable GPS routes.
-    """
     
     final_plan = {"flyable_trips": []}
 
@@ -100,10 +78,8 @@ def save_final_routes(plan, predecessors, points_lat_long):
             trip["flyable_path_gps"].append((int(node_index), float(lon), float(lat)))
             
         final_plan["flyable_trips"].append(trip)
-        
-    # --- THIS IS THE CHANGE ---
+
     output_path = os.path.join(data_dir, "final_flyable_routes.json")
-    # --- END OF CHANGE ---
     try:
         with open(output_path, 'w') as f:
             json.dump(final_plan, f, indent=4)
@@ -113,7 +89,6 @@ def save_final_routes(plan, predecessors, points_lat_long):
         
 
 def main():
-    """Entry point for the expansion script."""
     print("--- Route Expansion Script ---")
     plan, predecessors, points_lat_long = load_files()
     

@@ -25,22 +25,15 @@ allowed_flight_zone = wkt.loads(polygon_wkt_string)
 # convert flight zone information into geodataframe with correct coordinate system
 zone_gdf = gpd.GeoDataFrame(geometry=[allowed_flight_zone], crs="EPSG:4326")
 
-# 1. Define the Projected CRS (UTM Zone 17N)
 UTM_CRS = "EPSG:32617" 
 
-# 2. Create a temporary projected GeoDataFrame
 # Use .to_crs() to re-project the polygon from Lon/Lat (4326) to Meters (32617)
 zone_projected = zone_gdf.to_crs(UTM_CRS)
-
-# 3. Calculate the accurate centroid on the projected data (in meters)
-# The warning will disappear here because the units are now linear (meters)
 center_projected = zone_projected.centroid
 
-# 4. Convert the calculated centroid back to Lon/Lat (4326) for Plotly
 # Use .to_crs() again to transform the calculated center point back to Lon/Lat degrees
 center_lon_lat = center_projected.to_crs("EPSG:4326")
 
-# 5. Use the correct Lon/Lat coordinates in your plot
 center_lat = center_lon_lat.y.mean()
 center_lon = center_lon_lat.x.mean()
 
@@ -49,14 +42,12 @@ fig = px.choropleth_mapbox(
     zone_gdf, 
     geojson=zone_gdf.geometry.__geo_interface__,
     locations=zone_gdf.index,
-    # Set the color/opacity for the polygon fill
     color_discrete_sequence=['green'],
     opacity=1,
-    
-    # Map configuration
+
     center={"lat": center_lat, "lon": center_lon},
     mapbox_style="open-street-map",
-    zoom=14, # adjust zoom
+    zoom=14,
     title="Allowed Drone Flight Zone and Mission Path"
 )
 
@@ -68,8 +59,7 @@ fig.update_geos(fitbounds="locations", visible=False)
 colors = ['blue', 'red', 'green', 'yellow', 'pink', 'purple', 'orange', 'magenta', 'gold', 'black']
 i = 0
 
-for master_df in all_trip_dfs: 
-    # create list of mission point coordinates from master_df longitude and latitude values
+for master_df in all_trip_dfs:
     mission_points_coords = master_df[['lon', 'lat']].values.tolist()
 
     # Create a line connecting each point along the path in order
@@ -87,7 +77,7 @@ for master_df in all_trip_dfs:
         lat=lat_coords,
         lon=lon_coords,
         mode='lines',
-        line=dict(width=3, color=colors[i%10]), # Style the line
+        line=dict(width=3, color=colors[i%10]),
         name=f'Mission Path {i+1}'
     )
     i += 1
@@ -133,6 +123,4 @@ fig.add_scattermapbox(
     }, # Style the points
     name='Waypoint'
 )
-
-# Show the interactive figure
 fig.show()
