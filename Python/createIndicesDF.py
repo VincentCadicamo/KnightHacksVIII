@@ -17,6 +17,14 @@ coords_array = np.load(points_file_path)
 N = coords_array.shape[0]
 # set up master_df to store coordinate info
 i = 0
+all_coord_values = coords_array.tolist()
+
+#asset index value
+VAL = 3544
+
+asset_coords = [
+    coord for i, coord in enumerate(all_coord_values) if i > VAL
+]
 
 # load file for slices
 photo_index_slice = np.load(photo_indexes_file_path)
@@ -40,22 +48,30 @@ for trip_idx, trip in enumerate(all_trips):
 
 
 all_photo_dfs = []
-all_asset_dfs = []
 all_waypoint_dfs = []
 for master_df in all_trip_dfs: 
     # Create a Boolean Series (a mask) that is True only for specific Location indices
     is_photo_location_mask = master_df['index'].isin(valid_photo_indices)
-    is_asset_location_mask = master_df['index'].isin(valid_asset_indices)
     is_waypoint_location_mask = master_df['index'].isin(valid_waypoint_indices)
 
     # Use .loc with the mask to set the 'type' column for those specific rows
     master_df.loc[is_photo_location_mask, 'type'] = 'photo'
-    master_df.loc[is_asset_location_mask, 'type'] = 'asset'
     master_df.loc[is_waypoint_location_mask, 'type'] = 'waypoint'
 
     photo_df = master_df[master_df['type'] == 'photo'].copy()
     asset_df = master_df[master_df['type'] == 'asset'].copy()
     waypoint_df = master_df[master_df['type'] == 'waypoint'].copy()
     all_photo_dfs.append(photo_df)
-    all_asset_dfs.append(asset_df)
     all_waypoint_dfs.append(waypoint_df)
+
+
+# get all asset values wihin bounds
+asset_indices_to_extract = valid_asset_indices
+asset_lon_lat_data = coords_array[asset_indices_to_extract]
+
+all_assets_df = pd.DataFrame(
+    asset_lon_lat_data,
+    columns=['lon', 'lat']
+)
+
+all_assets_df['index'] = asset_indices_to_extract
