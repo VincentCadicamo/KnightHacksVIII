@@ -1,19 +1,18 @@
+import os
+
 import numpy as np
 import re
 import json
 
-
-#open file
-with open('data/final_flyable_routes.json') as file:
+ffr_path = os.path.join("data/final_flyable_routes.json")
+with open(ffr_path) as file:
     data = json.load(file)
 
-# storing data into trips
 trips = data["flyable_trips"]
 arr_Num_Count = len(trips)
 
 all_trips = []
 for trip in trips:
-    # storing index, lon, lat
     coords = [[idx, lon, lat] for idx, lon, lat in trip["flyable_path_gps"]]
     all_trips.append(coords)
 
