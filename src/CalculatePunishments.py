@@ -35,19 +35,13 @@ def process_row(i, locations, res_zones, res_sindex, FORBIDDEN_PENALTY, RESIDENT
         if i == j:
             continue
 
-        # point_j is assumed (lon_j, lat_j)
         lon_j, lat_j = locations[j]
 
-        # Use correct Haversine distance
         distance = haversine_distance(lon_i, lat_i, lon_j, lat_j)
         cost = distance
 
-        # Create the path using the original (lon, lat) order
         path = LineString([(lon_i, lat_i), (lon_j, lat_j)])
 
-        # CHECK HARD CONSTRAINT (ALLOWED REGION) - REMOVED
-
-        # Check soft constraint (residential zones)
         if res_zones is not None:
             path_bounds = path.bounds
             possible_hits_idx = list(res_sindex.intersection(path_bounds))
@@ -65,8 +59,6 @@ def process_row(i, locations, res_zones, res_sindex, FORBIDDEN_PENALTY, RESIDENT
         print(f"  ... processed row {i} / {num_locations}")
 
     return row
-
-# --- MAIN SCRIPT ---
 
 def build_smart_matrix():
     """

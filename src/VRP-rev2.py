@@ -3,6 +3,7 @@ import os
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
+
 # (create_data_model function is unchanged)
 def create_data_model(distance_matrix, num_vehicles, battery_capacity):
     """Stores the data for the problem."""
@@ -13,6 +14,8 @@ def create_data_model(distance_matrix, num_vehicles, battery_capacity):
     data["vehicle_capacities"] = [battery_capacity] * num_vehicles
     return data
 
+
+# (save_solution_npy function is unchanged)
 def save_solution_npy(data, manager, routing, solution, output_file_path):
     """Saves the routes to a .npy file."""
 
@@ -41,6 +44,7 @@ def save_solution_npy(data, manager, routing, solution, output_file_path):
     except Exception as e:
         print(f"Error saving .npy file: {e}")
 
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.dirname(script_dir)
@@ -52,6 +56,8 @@ def main():
     try:
         distance_matrix = np.load(matrix_file_path)
         photo_indexes = np.load(photo_indexes_file)
+        # Convert photo_indexes to a set for fast lookups
+        photo_indexes_set = set(int(idx) for idx in photo_indexes)
     except FileNotFoundError as e:
         print(f"Error: Could not find a required .npy file.")
         print(e)
@@ -62,7 +68,6 @@ def main():
 
     num_drones = 30
     drone_battery_ft = 37725
-    FORBIDDEN_PENALTY = 999999999
 
     data = create_data_model(distance_matrix, num_drones, drone_battery_ft)
 
@@ -82,43 +87,40 @@ def main():
     dimension_name = "Distance"
     routing.AddDimension(
         transit_callback_index,
-        0,
-        data["vehicle_capacities"][0],
-        True,
+        0,  # no slack
+        data["vehicle_capacities"][0],  # vehicle battery capacity
+        True,  # start cumul to zero
         dimension_name,
     )
-    distance_dimension = routing.GetDimensionOrDie(dimension_name)
-    distance_dimension.SetGlobalSpanCostCoefficient(300)
 
-    penalty = int(drone_battery_ft * num_drones)
+    # --- MANDATORY NODES LOGIC ---
+    # We no longer use AddDisjunction (prizes).
+    # Instead, we forbid the solver from visiting any node
+    # that is NOT in the photo_indexes list.
 
-    reachable_poles_count = 0
-    unreachable_poles = []
-    depot_index = 0
+    depot_index = data["depot"]
+    nodes_forbidden = 0
+    total_nodes_in_matrix = len(data["distance_matrix"])
 
-    for node_index in photo_indexes:
-        node_index_int = int(node_index)
-        if node_index_int == depot_index:
+    print(f"Total nodes in distance matrix: {total_nodes_in_matrix}")
+    print(f"Total Photo Poles to visit (Mandatory): {len(photo_indexes_set)}")
+
+    for node_index in range(total_nodes_in_matrix):
+        if node_index == depot_index:
             continue
 
-        cost_to_pole = distance_matrix[depot_index, node_index_int]
-        cost_from_pole = distance_matrix[node_index_int, depot_index]
-        round_trip_cost = cost_to_pole + cost_from_pole
-
-        if round_trip_cost < FORBIDDEN_PENALTY and round_trip_cost <= drone_battery_ft:
-            routing.AddDisjunction(
-                [manager.NodeToIndex(node_index_int)],
-                penalty
+        # If the node is NOT a photo pole, forbid all vehicles from visiting it.
+        if node_index not in photo_indexes_set:
+            routing.SetAllowedVehiclesForIndex(
+                [], manager.NodeToIndex(node_index)
             )
-            reachable_poles_count += 1
-        else:
-            unreachable_poles.append(node_index_int)
+            nodes_forbidden += 1
 
-    print(f"Total Photo Poles: {len(photo_indexes)}")
-    print(f"Reachable Poles: {reachable_poles_count}")
-    print(f"Unreachable Poles: {len(unreachable_poles)}")
-    if len(unreachable_poles) > 0 and len(unreachable_poles) < 20:
-        print(f"Skipped Pole IDs: {unreachable_poles}")
+    print(f"Forbidden {nodes_forbidden} non-photo-pole nodes.")
+    # Nodes that ARE in photo_indexes_set are left alone.
+    # By default, ortools treats any node that is not the depot and
+    # does not have a disjunction as MANDATORY.
+    # --- END OF LOGIC ---
 
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
 
@@ -132,11 +134,11 @@ def main():
     search_parameters.time_limit.seconds = 120
     search_parameters.log_search = True
 
-
-    print("Solving VRP (Prize-Collecting)...")
+    print("Solving CVRP (all photo poles mandatory)...")
     solution = routing.SolveWithParameters(search_parameters)
 
     if solution:
+        print("Solution found! All mandatory poles will be visited.")
         try:
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
@@ -147,6 +149,9 @@ def main():
         save_solution_npy(data, manager, routing, solution, output_file_path)
     else:
         print("No solution found!")
+        print("This may be because it is impossible to visit all mandatory poles")
+        print("with the given number of drones and battery capacity.")
+
 
 if __name__ == "__main__":
     main()
