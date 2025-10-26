@@ -1,22 +1,11 @@
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import LineString
-from shapely.wkt import loads as wkt_loads
 import os
 import multiprocessing
 from functools import partial
 
-# --- WORKER FUNCTIONS (FOR MULTIPROCESSING) ---
-
-# Re-introduce Haversine for geographic coordinates
 def haversine_distance(lon1, lat1, lon2, lat2):
-    """
-    Calculate the great-circle distance between two points
-    on the earth (specified in decimal degrees)
-
-    Returns:
-        Distance in feet.
-    """
     # Convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
 
@@ -30,7 +19,8 @@ def haversine_distance(lon1, lat1, lon2, lat2):
     r = 20902231
     return c * r
 
-def process_row(i, locations, allowed_polygon, res_zones, res_sindex, FORBIDDEN_PENALTY, RESIDENTIAL_PENALTY):
+# MODIFIED: Removed 'allowed_polygon' from arguments and the hard constraint check
+def process_row(i, locations, res_zones, res_sindex, FORBIDDEN_PENALTY, RESIDENTIAL_PENALTY):
     """
     Calculates a single row of the smart matrix using Haversine
     and assuming consistent (lon, lat) order.
@@ -55,21 +45,19 @@ def process_row(i, locations, allowed_polygon, res_zones, res_sindex, FORBIDDEN_
         # Create the path using the original (lon, lat) order
         path = LineString([(lon_i, lat_i), (lon_j, lat_j)])
 
-        # Check hard constraint (allowed region) using the SAME order
-        if not path.within(allowed_polygon):
-            cost = FORBIDDEN_PENALTY
-        else:
-            # Check soft constraint (residential zones)
-            if res_zones is not None:
-                path_bounds = path.bounds
-                possible_hits_idx = list(res_sindex.intersection(path_bounds))
+        # CHECK HARD CONSTRAINT (ALLOWED REGION) - REMOVED
 
-                if possible_hits_idx:
-                    possible_zones = res_zones.iloc[possible_hits_idx]
-                    for zone in possible_zones.geometry:
-                        if path.intersects(zone):
-                            cost += RESIDENTIAL_PENALTY
-                            break
+        # Check soft constraint (residential zones)
+        if res_zones is not None:
+            path_bounds = path.bounds
+            possible_hits_idx = list(res_sindex.intersection(path_bounds))
+
+            if possible_hits_idx:
+                possible_zones = res_zones.iloc[possible_hits_idx]
+                for zone in possible_zones.geometry:
+                    if path.intersects(zone):
+                        cost += RESIDENTIAL_PENALTY
+                        break
 
         row[j] = int(cost)
 
@@ -97,12 +85,12 @@ def build_smart_matrix():
         data_dir = os.path.join(root_dir, "data")
 
     locations_file = os.path.join(data_dir, "points_lat_long.npy")
-    allowed_region_file = os.path.join(data_dir, "polygon_lon_lat.wkt")
+    # allowed_region_file = os.path.join(data_dir, "polygon_lon_lat.wkt") # REMOVED
     res_zones_file = os.path.join(data_dir, "residential_zones.geojson")
     output_matrix_file = os.path.join(data_dir, "smart_matrix.npy")
 
+    # FORBIDDEN_PENALTY is no longer used for the hard constraint
     FORBIDDEN_PENALTY = 999999999
-    # Setting penalty back to a more reasonable value
     RESIDENTIAL_PENALTY = 10000
 
     # --- 2. LOAD ALL DATA ---
@@ -114,14 +102,16 @@ def build_smart_matrix():
         print(f"Error: Could not find {locations_file}")
         return
 
-    try:
-        with open(allowed_region_file, 'r') as f:
-            # Load WKT (assumed lon, lat order based on standard)
-            allowed_polygon = wkt_loads(f.read())
-        print("Successfully loaded WKT allowed region.")
-    except Exception as e:
-        print(f"Error loading WKT file '{allowed_region_file}': {e}")
-        return
+    # REMOVED: WKT loading block
+    # allowed_polygon = None
+    # try:
+    #     with open(allowed_region_file, 'r') as f:
+    #         # Load WKT (assumed lon, lat order based on standard)
+    #         allowed_polygon = wkt_loads(f.read())
+    #     print("Successfully loaded WKT allowed region.")
+    # except Exception as e:
+    #     print(f"Error loading WKT file '{allowed_region_file}': {e}")
+    #     return
 
     res_zones = None
     res_sindex = None
@@ -142,7 +132,7 @@ def build_smart_matrix():
     task_function = partial(
         process_row,
         locations=locations,
-        allowed_polygon=allowed_polygon,
+        # allowed_polygon=allowed_polygon, # REMOVED
         res_zones=res_zones,
         res_sindex=res_sindex,
         FORBIDDEN_PENALTY=FORBIDDEN_PENALTY,
@@ -157,7 +147,6 @@ def build_smart_matrix():
     # --- 4. SAVE THE NEW MATRIX ---
     try:
         np.save(output_matrix_file, smart_cost_matrix)
-        print("\n--- 🚀 SUCCESS! ---")
         print(f"New 'smart_matrix.npy' saved to:")
         print(f"{os.path.abspath(output_matrix_file)}")
     except Exception as e:
