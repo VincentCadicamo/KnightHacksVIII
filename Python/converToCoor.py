@@ -14,5 +14,4 @@ coords = [(idx, points[idx][0], points[idx][1]) for idx in indices]
 for idx, lon, lat in coords:
     print(f"Lon= {lon:f}, Lat= {lat:f}")
 
-
-
+numArrays = 1
