@@ -1,17 +1,33 @@
-import numpy as np, re
+import numpy as np
+import re
+import json
 
-# Example arrow text
-log_line = "0 (Dist:0) -> 1820 (Dist:111) -> 1867 (Dist:114) -> 1822 (Dist:153) -> 1872 (Dist:156)"
 
-# Extract only the integers before "(Dist:...)" 
-indices = [int(m.group(1)) for m in re.finditer(r"(\d+)\s*\(Dist:", log_line)]
 
-# Load a single array
-points = np.load("data/points_lat_long.npy")
 
-coords = [(idx, points[idx][0], points[idx][1]) for idx in indices]
+#
+with open('data/final_flyable_routes.json') as file:
+    data = json.load(file)
+# 
+trips = data["flyable_trips"]
+arr_Num_Count = len(trips)
 
-for idx, lon, lat in coords:
-    print(f"Lon= {lon:f}, Lat= {lat:f}")
+all_trips = []
+for trip in trips:
+    coords = [[lon, lat] for _, lon, lat in trip ["flyable_path_gps"]]
+    all_trips.append(coords)
+
+
+for trip_idx, trip in enumerate(all_trips):
+    print(f"\nTrip {trip_idx}:")
+    for lon, lat in trip:
+        print(f" {lon:.6f}, {lat:.6f}")
+
+with open("trips_output.txt", "w") as f:
+    for trip_idx, trip in enumerate(all_trips):
+        f.write(f"Trip {trip_idx}:\n")
+        for lon, lat in trip:
+            f.write(f"  Lon: {lon:.6f}, Lat: {lat:.6f}\n")
+        f.write("\n")
 
 
