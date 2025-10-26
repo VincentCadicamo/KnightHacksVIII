@@ -10,14 +10,25 @@ import os
 import json
 import numpy as np
 
+# --- THIS IS THE CHANGE ---
+# Get the directory of the current script (src)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Get the base directory (one level up)
+base_dir = os.path.dirname(script_dir)
+# Define the data directory path
+data_dir = os.path.join(base_dir, "data")
+# --- END OF CHANGE ---
+
 
 def load_files():
     """Loads all necessary files from the data directory."""
     print("Loading route plan and .npy files...")
     
-    plan_path = os.path.join("data", "route_plan.json")
-    preds_path = os.path.join("data", "predecessors.npy")
-    points_path = os.path.join("data", "points_lat_long.npy")
+    # --- THIS IS THE CHANGE ---
+    plan_path = os.path.join(data_dir, "route_plan.json")
+    preds_path = os.path.join(data_dir, "predecessors.npy")
+    points_path = os.path.join(data_dir, "points_lat_long.npy")
+    # --- END OF CHANGE ---
     
     try:
         with open(plan_path, 'r') as f:
@@ -40,8 +51,6 @@ def expand_full_path(predecessors, from_node, to_node):
     Finds the full sequence of nodes between two points
     using the predecessors matrix.
     """
-    # We cast all node indices to standard Python `int`
-    # to prevent any numpy.int32 types.
     from_node = int(from_node)
     to_node = int(to_node)
     
@@ -49,12 +58,8 @@ def expand_full_path(predecessors, from_node, to_node):
     current = to_node
     
     while current != from_node:
-        # Get the predecessor (which is a numpy.int32)
-        # and cast it to a standard Python `int`
         current = int(predecessors[from_node, current])
         path.append(current)
-        
-        # Safety break to prevent infinite loops
         if len(path) > 1000:
              print(f"Warning: Path from {from_node} to {to_node} seems too long. Breaking.")
              break
@@ -73,11 +78,9 @@ def save_final_routes(plan, predecessors, points_lat_long):
     for original_trip in plan["trips"]:
         print(f"Expanding Trip {original_trip['trip_id']}...")
         
-        # Cast trip_id and total_distance to standard `int`
-        # just in case they are numpy types.
         trip = {
-            "trip_id": int(original_trip["trip_id"]),
-            "total_distance_from_plan": int(original_trip["total_distance"]),
+            "trip_id": int(original_trip['trip_id']),
+            "total_distance_from_plan": int(original_trip['total_distance']),
             "flyable_path_gps": []
         }
         
@@ -87,29 +90,20 @@ def save_final_routes(plan, predecessors, points_lat_long):
         for i in range(len(original_sequence) - 1):
             from_node = original_sequence[i]
             to_node = original_sequence[i+1]
-            
-            # Get the expanded path, but drop the last node
-            # to avoid duplicates (e.g., A->B, B->C)
             expanded_leg = expand_full_path(predecessors, from_node, to_node)[:-1]
             full_path_indices.extend(expanded_leg)
         
-        # Add the very last node of the trip
         full_path_indices.append(original_sequence[-1])
 
-        # Convert the full list of indices to GPS coordinates
         for node_index in full_path_indices:
-            # node_index is a Python `int`
             lon, lat = points_lat_long[node_index]
-            
-            # --- THIS IS THE CHANGE ---
-            # Save the coordinate as (id, longitude, latitude)
             trip["flyable_path_gps"].append((int(node_index), float(lon), float(lat)))
-            # --- END OF CHANGE ---
             
         final_plan["flyable_trips"].append(trip)
         
-    # Save the final file
-    output_path = os.path.join("data", "final_flyable_routes.json")
+    # --- THIS IS THE CHANGE ---
+    output_path = os.path.join(data_dir, "final_flyable_routes.json")
+    # --- END OF CHANGE ---
     try:
         with open(output_path, 'w') as f:
             json.dump(final_plan, f, indent=4)
