@@ -5,7 +5,7 @@ import geopandas as gpd
 import plotly.express as px
 import pandas as pd
 import sys, json, numpy as np
-from createIndicesDF import all_trip_dfs, all_photo_dfs, all_waypoint_dfs, all_asset_dfs
+from createIndicesDF import all_trip_dfs, all_photo_dfs, all_waypoint_dfs, all_assets_df, asset_coords
 
 # establish file paths
 project_root = Path(__file__).resolve().parent.parent
@@ -75,10 +75,6 @@ for master_df in all_trip_dfs:
     # Create a line connecting each point along the path in order
     mission_path = LineString(mission_points_coords)
 
-    # check if path is within allowed bounds
-    if(allowed_flight_zone.contains(mission_path)): 
-        print("mission path in bounds")
-
     # convert path information into geodataframe with correct coordinate system
     path_gdf = gpd.GeoDataFrame(geometry=[mission_path], crs="EPSG:4326")
 
@@ -92,52 +88,51 @@ for master_df in all_trip_dfs:
         lon=lon_coords,
         mode='lines',
         line=dict(width=3, color=colors[i%10]), # Style the line
-        name='Mission Path'
+        name=f'Mission Path {i+1}'
     )
     i += 1
 
 
  # Add markers for Photo Locations
-for photo_df in all_photo_dfs:
-    fig.add_scattermapbox(
-        lat=photo_df['lat'],
-        lon=photo_df['lon'],
-        mode='markers',
-        marker={
-            'size': 8,
-            'color': 'pink',
-            'symbol': 'circle'
-        }, # Style the points
-        name='Photo'
-    )
+all_photos_combined_df = pd.concat(all_photo_dfs, ignore_index=True)
+fig.add_scattermapbox(
+    lat=all_photos_combined_df['lat'],
+    lon=all_photos_combined_df['lon'],
+    mode='markers',
+    marker={
+        'size': 8,
+        'color': 'pink',
+        'symbol': 'circle'
+    }, # Style the points
+    name='Photo'
+)
 
 # Add markers for Assets
-for asset_df in all_asset_dfs:
-    fig.add_scattermapbox(
-        lat=asset_df['lat'],
-        lon=asset_df['lon'],
-        mode='markers',
-        marker={
-            'size': 8,
-            'color': 'blue',
-            'symbol': 'circle'
-        }, # Style the points
-        name='Asset'
-    )
+fig.add_scattermapbox(
+    lat=all_assets_df['lat'],
+    lon=all_assets_df['lon'],
+    mode='markers',
+    marker={
+        'size': 8,
+        'color': 'blue',
+        'symbol': 'circle'
+    }, # Style the points
+    name='Asset'
+)
 
 # Add markers for Waypoints
-for waypoint_df in all_waypoint_dfs:
-    fig.add_scattermapbox(
-        lat=waypoint_df['lat'],
-        lon=waypoint_df['lon'],
-        mode='markers',
-        marker={
-            'size': 8,
-            'color': 'yellow',
-            'symbol': 'circle'
-        }, # Style the points
-        name='Waypoint'
-    )
+all_waypoints_combined_df = pd.concat(all_waypoint_dfs, ignore_index=True)
+fig.add_scattermapbox(
+    lat=all_waypoints_combined_df['lat'],
+    lon=all_waypoints_combined_df['lon'],
+    mode='markers',
+    marker={
+        'size': 8,
+        'color': 'yellow',
+        'symbol': 'circle'
+    }, # Style the points
+    name='Waypoint'
+)
 
 # Show the interactive figure
 fig.show()

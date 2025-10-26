@@ -18,10 +18,12 @@ for trip in trips:
     all_trips.append(coords)
 
 # Print to console
+'''
 for trip_idx, trip in enumerate(all_trips):
     print(f"\nTrip {trip_idx}:")
     for idx, lon, lat in trip:
         print(f" {idx}, {lon:.6f}, {lat:.6f}")
+
 
 # Write to file
 with open("trips_output.txt", "w") as f:
@@ -30,3 +32,4 @@ with open("trips_output.txt", "w") as f:
         for idx, lon, lat in trip:
             f.write(f"  {idx}, Lon: {lon:.6f}, Lat: {lat:.6f}\n")
         f.write("\n")
+'''
