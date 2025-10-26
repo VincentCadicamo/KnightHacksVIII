@@ -22,17 +22,11 @@ base_dir = os.path.dirname(script_dir)
 data_dir = os.path.join(base_dir, "data")
 # Ensure data directory exists so output can always be written
 os.makedirs(data_dir, exist_ok=True)
-# --- END OF CHANGE ---
-
-
 def create_data_model():
-    """Loads and stores the data for the problem."""
     print("Stage 1: Loading data model...")
     data = {}
-    
-    # --- THIS IS THE CHANGE ---
+
     npy_file_path = os.path.join(data_dir, "distance_matrix.npy")
-    # --- END OF CHANGE ---
     
     try:
         matrix = np.load(npy_file_path)
@@ -50,10 +44,6 @@ def create_data_model():
 
 
 def save_solution_to_file(data, manager, routing, solution, solve_time):
-    """
-    Saves the simplified route plan to a JSON file.
-    This is the "handoff" for the expansion script.
-    """
     print("Stage 4: Saving route plan to JSON...")
     
     plan = {"trips": []}
