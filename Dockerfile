@@ -11,4 +11,4 @@ COPY data ./data
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "./src/VRP.py"]
+CMD ["python", "./src/solve_vrp.py"]
