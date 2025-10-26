@@ -1,5 +1,0 @@
-numpy
-ortools
-shapely
-geopandas
-plotly
